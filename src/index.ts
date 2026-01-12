@@ -6,6 +6,8 @@ export const configSchema = z.object({
 	apiToken: z.string().describe("Partner API token for Maiga API authentication"),
 })
 
+// Stateless server (default) - no stateful export needed, but explicitly declared for build compatibility
+
 // Helper function to make API requests
 async function makeApiRequest(
 	baseUrl: string,
