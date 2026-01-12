@@ -1,16 +1,1 @@
-runtime: "container"
-build:
-  dockerfile: "Dockerfile"
-  dockerBuildPath: "."
-startCommand:
-  type: "http"
-  configSchema:
-    type: "object"
-    properties:
-      apiToken:
-        type: "string"
-        description: "Partner API token for Maiga API authentication"
-    required:
-      - "apiToken"
-  exampleConfig:
-    apiToken: "your-api-token-here"
+runtime: typescript

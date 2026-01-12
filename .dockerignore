@@ -1,8 +1,0 @@
-node_modules
-npm-debug.log
-.smithery
-.git
-.gitignore
-README.md
-*.md
-.DS_Store
