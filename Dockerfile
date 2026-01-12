@@ -17,4 +17,4 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-CMD ["node", ".smithery/shttp/module.js"]
+CMD ["node", "dist/index.js"]
