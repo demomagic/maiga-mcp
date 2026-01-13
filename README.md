@@ -189,58 +189,6 @@ The server includes comprehensive error handling for:
 
 All errors are returned as structured responses with descriptive messages. Rate limit errors include retry-after information.
 
-## Troubleshooting
-
-### Build Error: libsecret-1.so.0 not found
-
-If you encounter the following error during deployment:
-
-```
-Error: libsecret-1.so.0: cannot open shared object file: No such file or directory
-```
-
-This error occurs because `@smithery/cli` depends on `keytar` (as an optional dependency), which requires the `libsecret-1` system library on Linux systems. This is a build environment issue with Smithery's infrastructure.
-
-**Important Notes:**
-
-- `libsecret-1.so.0` is a **system-level library**, not a Node.js package
-- It cannot be installed via `package.json`, `smithery.config.js`, or npm
-- This must be installed in Smithery's build environment at the OS level
-- The error occurs during build, not at runtime
-
-**Solutions Implemented:**
-
-This project includes a workaround to handle this issue:
-
-1. **Postinstall Script**: Creates a stub keytar module if keytar fails to load
-   - File: `scripts/create-keytar-stub.cjs`
-   - Automatically runs after `npm install` (via `postinstall` script in `package.json`)
-   - Detects if keytar fails to load due to missing libsecret
-   - Replaces keytar's native module (`lib/keytar.js`) with a no-op JavaScript implementation
-   - This allows the build to continue even when libsecret is not available in the build environment
-
-**If the Workaround Doesn't Work:**
-
-1. **Contact Smithery Support** (Recommended)
-   - This is a build environment infrastructure issue that Smithery needs to resolve
-   - Contact support through [smithery.ai](https://smithery.ai) or their documentation
-   - Request that they install `libsecret-1` in their TypeScript build environment
-   - Reference the error and mention it's related to `keytar` dependency in `@smithery/cli`
-
-2. **Check for Updates**
-   - Ensure you're using the latest version of `@smithery/cli`
-   - Update dependencies: `npm update @smithery/cli`
-   - Newer versions may have resolved this or changed dependencies
-
-**Why `smithery.config.js` Cannot Fix This:**
-
-- `smithery.config.js` (if it exists) is for build configuration, not system library installation
-- System libraries like `libsecret-1` must be installed at the OS level in the build environment
-- Only Smithery's infrastructure team can add system libraries to their build containers
-
-**Reference Documentation:**
-- [Smithery TypeScript Deployment Docs](https://smithery.ai/docs/build/deployments/typescript#why-does-my-deployment-fail)
-
 ## Security
 
 - API tokens are required and validated at connection time
@@ -264,10 +212,7 @@ This project includes a workaround to handle this issue:
 maiga/
 ├── src/
 │   └── index.ts          # Main server implementation with all tools
-├── scripts/
-│   └── create-keytar-stub.cjs  # Postinstall script to create keytar stub
 ├── package.json          # Project dependencies and scripts
-├── .npmrc                # npm configuration to skip optional dependencies
 ├── smithery.yaml         # Runtime specification
 └── README.md            # This file
 ```

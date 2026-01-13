@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Create a stub keytar module to avoid libsecret-1.so.0 dependency error
- * This script replaces keytar.js with a stub implementation that doesn't
- * require the native module, preventing build failures in environments without libsecret
+ * This script creates a fake keytar module that exports empty functions
+ * to prevent build failures when keytar cannot load due to missing libsecret
  */
 
 const fs = require('fs');
@@ -31,18 +31,10 @@ if (!keytarPath) {
 }
 
 const keytarLibPath = path.join(keytarPath, 'lib', 'keytar.js');
+const keytarIndexPath = path.join(keytarPath, 'lib', 'keytar.node');
+const keytarPackageJson = path.join(keytarPath, 'package.json');
 
-// Check if the file already exists and is our stub
-if (fs.existsSync(keytarLibPath)) {
-  const content = fs.readFileSync(keytarLibPath, 'utf8');
-  if (content.includes('Stub keytar module')) {
-    console.log('keytar stub already exists, skipping');
-    process.exit(0);
-  }
-}
-
-// Try to load keytar to see if it works
-let needsStub = false;
+// Check if keytar can be loaded
 try {
   require('keytar');
   console.log('keytar loaded successfully, no stub needed');
@@ -52,40 +44,31 @@ try {
       error.message.includes('libsecret') || 
       error.message.includes('libsecret-1.so.0') ||
       error.message.includes('cannot open shared object file')) {
-    needsStub = true;
-  } else {
-    // Some other error - might be that keytar isn't installed yet
-    // Create stub proactively to prevent future errors
-    needsStub = true;
-  }
-}
-
-if (needsStub) {
-  console.log('Creating keytar stub to avoid libsecret dependency...');
-  
-  // Create stub directory if it doesn't exist
-  const stubDir = path.dirname(keytarLibPath);
-  if (!fs.existsSync(stubDir)) {
-    fs.mkdirSync(stubDir, { recursive: true });
-  }
-  
-  // Backup the original keytar.js file if it exists and isn't already a stub
-  const backupPath = keytarLibPath + '.backup';
-  if (fs.existsSync(keytarLibPath) && !fs.existsSync(backupPath)) {
-    try {
-      fs.copyFileSync(keytarLibPath, backupPath);
-      console.log('Backed up original keytar.js file');
-    } catch (e) {
-      // Ignore backup errors
+    console.log('keytar failed to load due to missing libsecret, creating stub...');
+    
+    // Create stub directory if it doesn't exist
+    const stubDir = path.dirname(keytarLibPath);
+    if (!fs.existsSync(stubDir)) {
+      fs.mkdirSync(stubDir, { recursive: true });
     }
-  }
-  
-  // Create a stub keytar module that exports the same API
-  // This replaces the original keytar.js which tries to load the native module
-  const stubCode = `// Stub keytar module - created to avoid libsecret-1.so.0 dependency
+    
+    // Backup the original .node file if it exists (native module)
+    if (fs.existsSync(keytarIndexPath)) {
+      try {
+        const backupPath = keytarIndexPath + '.backup';
+        if (!fs.existsSync(backupPath)) {
+          fs.renameSync(keytarIndexPath, backupPath);
+          console.log('Backed up original keytar.node file');
+        }
+      } catch (e) {
+        // Ignore backup errors
+      }
+    }
+    
+    // Create a stub keytar module that exports the same API
+    const stubCode = `// Stub keytar module - created to avoid libsecret-1.so.0 dependency
 // This is a no-op implementation for build environments without libsecret
 // Original keytar is a native module that requires libsecret system library
-// This stub is created by scripts/create-keytar-stub.cjs during postinstall
 
 module.exports = {
   getPassword: async () => null,
@@ -95,14 +78,19 @@ module.exports = {
   findCredentials: async () => []
 };
 `;
-  
-  try {
-    fs.writeFileSync(keytarLibPath, stubCode, 'utf8');
-    console.log('keytar stub created successfully at:', keytarLibPath);
-    process.exit(0);
-  } catch (writeError) {
-    console.warn('Failed to create keytar stub:', writeError.message);
-    // Don't fail the build if we can't create the stub
+    
+    try {
+      fs.writeFileSync(keytarLibPath, stubCode, 'utf8');
+      console.log('keytar stub created successfully at:', keytarLibPath);
+      process.exit(0);
+    } catch (writeError) {
+      console.warn('Failed to create keytar stub:', writeError.message);
+      // Don't fail the build if we can't create the stub
+      process.exit(0);
+    }
+  } else {
+    // Some other error, don't interfere
+    console.log('keytar error (not libsecret related):', error.message);
     process.exit(0);
   }
 }
