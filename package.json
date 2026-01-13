@@ -7,7 +7,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "smithery dev",
-		"build": "smithery build"
+		"build": "smithery build",
+		"postinstall": "node scripts/create-keytar-stub.cjs || true"
 	},
 	"keywords": [],
 	"author": "",
