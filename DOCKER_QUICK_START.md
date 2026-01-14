@@ -9,7 +9,7 @@ docker build -t maiga-mcp:latest .
 ```
 
 构建时间：约 1-2 分钟  
-镜像大小：约 257MB
+镜像大小：约 225MB（优化后，只包含打包好的代码）
 
 ### 2. 运行容器（方式一：直接运行）
 
@@ -234,8 +234,16 @@ docker run -d \
 ### 镜像大小对比
 
 - `node:20` (完整版): ~1GB
-- `node:20-slim` (当前使用): ~257MB (包含应用)
+- `node:20-slim` (当前使用): ~225MB (包含应用，已优化)
 - `node:20-alpine`: ~150MB (但与 keytar 不兼容)
+
+### 为什么不需要 node_modules？
+
+`smithery build` 会创建一个自包含的 `.smithery/index.cjs` 打包文件，它：
+- ✅ 包含所有应用代码和依赖
+- ✅ 只依赖 Node.js 内置模块（如 `stream`）
+- ✅ 可以直接用 `node` 运行，无需 npm 或 smithery CLI
+- ✅ 减小镜像大小，加快启动速度
 
 ## 安全建议
 

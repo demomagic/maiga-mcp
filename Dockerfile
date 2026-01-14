@@ -22,10 +22,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the MCP server
+# Build the MCP server - creates a self-contained .smithery/index.cjs bundle
 RUN npx smithery build
 
-# Production stage
+# Production stage - minimal runtime image
 FROM node:20-slim
 
 # Set working directory
@@ -40,16 +40,9 @@ RUN apt-get update && apt-get install -y \
 RUN groupadd -g 1001 nodejs && \
     useradd -r -u 1001 -g nodejs nodejs
 
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies only
-RUN npm ci --omit=dev && \
-    npm cache clean --force
-
-# Copy built files from builder stage
+# Copy only the built bundle from builder stage
+# The .smithery/index.cjs is self-contained and includes all dependencies
 COPY --from=builder /app/.smithery ./.smithery
-COPY --from=builder /app/src ./src
 
 # Change ownership to non-root user
 RUN chown -R nodejs:nodejs /app
@@ -71,5 +64,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the MCP server
+# Start the MCP server with the bundled file
 CMD ["node", ".smithery/index.cjs"]

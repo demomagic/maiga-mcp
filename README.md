@@ -303,11 +303,17 @@ docker-compose down
 #### Docker Configuration
 
 The Dockerfile includes:
-- ✅ **Multi-stage build** for optimized image size (~257MB)
+- ✅ **Multi-stage build** for optimized image size (~225MB)
+- ✅ **Self-contained bundle** - production image only includes the bundled `.smithery/index.cjs` file
 - ✅ **Non-root user** for enhanced security
 - ✅ **Health checks** for container monitoring
 - ✅ **dumb-init** for proper signal handling
 - ✅ **Production-ready** Node.js Debian-based image (node:20-slim)
+
+**Build Process:**
+1. **Builder stage**: Installs all dependencies and runs `smithery build` to create a self-contained bundle
+2. **Production stage**: Only copies the `.smithery/index.cjs` bundle (no node_modules needed)
+3. **Runtime**: Directly runs `node .smithery/index.cjs` without smithery CLI
 
 **Note:** We use `node:20-slim` (Debian-based) instead of Alpine because `@smithery/cli` depends on `keytar`, a native module that requires `libsecret-1`, which has better compatibility with Debian/glibc than Alpine/musl
 
