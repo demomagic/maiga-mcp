@@ -1,8 +1,6 @@
 # Use official Node.js LTS version with Debian slim
 FROM node:20-slim
 
-ARG SMITHERY_API_KEY
-
 # Install system dependencies including libsecret
 RUN apt-get update && apt-get install -y \
     libsecret-1-0 \
@@ -30,6 +28,8 @@ RUN npm run build
 
 # Expose the port
 EXPOSE 3000
+
+ARG SMITHERY_API_KEY
 
 # Run the Smithery playground
 CMD ["npx", "@smithery/cli@latest", "playground", "--port", "3000", "--key", $SMITHERY_API_KEY]
