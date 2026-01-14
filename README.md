@@ -305,6 +305,7 @@ docker-compose down
 The Dockerfile includes:
 - ✅ **Simple single-stage build** for ease of use (~429MB)
 - ✅ **Runtime build** - builds MCP server on container start for flexibility
+- ✅ **Non-interactive mode** - uses CI=true and SMITHERY_NON_INTERACTIVE=true to avoid prompts
 - ✅ **Non-root user** for enhanced security
 - ✅ **Health checks** for container monitoring
 - ✅ **dumb-init** for proper signal handling
@@ -313,12 +314,14 @@ The Dockerfile includes:
 **Build Process:**
 1. **Docker build**: Installs all dependencies (including devDependencies)
 2. **Container start**: Runs `start.sh` which:
+   - Sets environment variables for non-interactive mode (CI=true, SMITHERY_NON_INTERACTIVE=true)
    - Executes `smithery build` to create `.smithery/index.cjs` bundle
    - Starts the server with `node .smithery/index.cjs`
 
 **Why this approach?**
 - ✅ Flexible: Source code changes are reflected on container restart
 - ✅ Simple: No multi-stage complexity
+- ✅ Non-interactive: No API key prompts in deployed environments
 - ✅ Reliable: Uses stable `node .smithery/index.cjs` for runtime
 
 **Note:** We use `node:20-slim` (Debian-based) instead of Alpine because `@smithery/cli` depends on `keytar`, a native module that requires `libsecret-1`, which has better compatibility with Debian/glibc than Alpine/musl
@@ -330,6 +333,9 @@ The Dockerfile includes:
 | `MAIGA_API_TOKEN` | Yes | - | Your Maiga Partner API token |
 | `PORT` | No | 8081 | Server port |
 | `NODE_ENV` | No | production | Node environment |
+| `SMITHERY_API_KEY` | No | (auto-set) | Smithery API key for build (automatically configured) |
+| `CI` | No | true | Force non-interactive mode for Smithery CLI |
+| `SMITHERY_NON_INTERACTIVE` | No | true | Prevent Smithery from showing interactive prompts |
 
 #### Health Check
 

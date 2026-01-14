@@ -27,13 +27,8 @@ RUN npm ci && \
 # Copy source code
 COPY . .
 
-# Build the MCP server during Docker build (avoids runtime interaction)
-# Set environment variables for non-interactive build
-ENV SMITHERY_API_KEY=b0fa02fa-c699-4394-86ea-bc020cea3072
-ENV CI=true
-
-# Run smithery build to create .smithery/index.cjs
-RUN npx smithery build
+# Make start script executable
+RUN chmod +x start.sh
 
 # Change ownership to non-root user
 RUN chown -R nodejs:nodejs /app
@@ -47,6 +42,9 @@ EXPOSE 8081
 # Environment variables (can be overridden at runtime)
 ENV NODE_ENV=production
 ENV PORT=8081
+ENV SMITHERY_API_KEY=b0fa02fa-c699-4394-86ea-bc020cea3072
+ENV CI=true
+ENV SMITHERY_NON_INTERACTIVE=true
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -55,5 +53,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the MCP server directly (already built during Docker build)
-CMD ["node", ".smithery/index.cjs"]
+# Start the MCP server using the start script
+# This will build and then run the server in non-interactive mode
+CMD ["./start.sh"]
