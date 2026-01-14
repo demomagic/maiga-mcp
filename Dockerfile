@@ -32,4 +32,4 @@ EXPOSE 3000
 ARG SMITHERY_API_KEY
 
 # Run the Smithery playground
-CMD ["/bin/sh", "-c", "npx @smithery/cli@latest dev --port 3000 --no-open --key $SMITHERY_API_KEY"]
+CMD ["/bin/sh", "-c", "npx @smithery/cli@latest playground --port 3000"]
