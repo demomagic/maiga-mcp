@@ -188,12 +188,12 @@ export default function createServer({
 				}
 			} catch (error) {
 				return {
-					content: [
-						{
-							type: "text",
+			content: [
+				{
+					type: "text",
 							text: `Error fetching token info: ${error instanceof Error ? error.message : String(error)}`,
-						},
-					],
+				},
+			],
 				}
 			}
 		},
@@ -222,7 +222,7 @@ export default function createServer({
 
 				return {
 					content: [
-						{
+				{
 							type: "text",
 							text: JSON.stringify(result, null, 2),
 						},
@@ -274,8 +274,8 @@ export default function createServer({
 						{
 							type: "text",
 							text: `Error analyzing KOL: ${error instanceof Error ? error.message : String(error)}`,
-						},
-					],
+				},
+			],
 				}
 			}
 		},
@@ -298,9 +298,9 @@ export default function createServer({
 					{},
 				)
 
-				return {
+			return {
 					content: [
-						{
+					{
 							type: "text",
 							text: JSON.stringify(result, null, 2),
 						},
@@ -312,8 +312,8 @@ export default function createServer({
 						{
 							type: "text",
 							text: `Error fetching trending tokens: ${error instanceof Error ? error.message : String(error)}`,
-						},
-					],
+					},
+				],
 				}
 			}
 		},

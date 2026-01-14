@@ -217,7 +217,9 @@ maiga/
 └── README.md            # This file
 ```
 
-## Deploy
+## Deployment
+
+### Option 1: Deploy to Smithery (Recommended)
 
 Ready to deploy? Push your code to GitHub and deploy to Smithery:
 
@@ -232,6 +234,175 @@ Ready to deploy? Push your code to GitHub and deploy to Smithery:
    ```
 
 3. Deploy your server to Smithery at [smithery.ai/new](https://smithery.ai/new)
+
+### Option 2: Deploy with Docker
+
+#### Prerequisites
+
+- Docker installed on your system
+- Docker Compose (optional, but recommended)
+- Maiga Partner API token
+
+#### Quick Start with Docker
+
+1. **Build the Docker image:**
+
+```bash
+docker build -t maiga-mcp:latest .
+```
+
+2. **Run the container:**
+
+```bash
+docker run -d \
+  --name maiga-mcp-server \
+  -p 8081:8081 \
+  -e MAIGA_API_TOKEN=your_api_token_here \
+  maiga-mcp:latest
+```
+
+3. **Access the server:**
+
+The MCP server will be available at `http://localhost:8081`
+
+#### Using Docker Compose (Recommended)
+
+1. **Create a `.env` file:**
+
+```bash
+# Copy the example file
+cp .env.example .env
+```
+
+2. **Edit `.env` file** and add your Maiga API token:
+
+```env
+MAIGA_API_TOKEN=your_partner_api_token_here
+PORT=8081
+NODE_ENV=production
+```
+
+3. **Start the service:**
+
+```bash
+docker-compose up -d
+```
+
+4. **View logs:**
+
+```bash
+docker-compose logs -f maiga-mcp
+```
+
+5. **Stop the service:**
+
+```bash
+docker-compose down
+```
+
+#### Docker Configuration
+
+The Dockerfile includes:
+- ✅ **Multi-stage build** for optimized image size (~257MB)
+- ✅ **Non-root user** for enhanced security
+- ✅ **Health checks** for container monitoring
+- ✅ **dumb-init** for proper signal handling
+- ✅ **Production-ready** Node.js Debian-based image (node:20-slim)
+
+**Note:** We use `node:20-slim` (Debian-based) instead of Alpine because `@smithery/cli` depends on `keytar`, a native module that requires `libsecret-1`, which has better compatibility with Debian/glibc than Alpine/musl
+
+#### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `MAIGA_API_TOKEN` | Yes | - | Your Maiga Partner API token |
+| `PORT` | No | 8081 | Server port |
+| `NODE_ENV` | No | production | Node environment |
+
+#### Health Check
+
+The container includes a health check endpoint. You can manually check health:
+
+```bash
+curl http://localhost:8081/health
+```
+
+#### Docker Commands Reference
+
+```bash
+# Build image
+docker build -t maiga-mcp:latest .
+
+# Run container
+docker run -d --name maiga-mcp -p 8081:8081 -e MAIGA_API_TOKEN=your_token maiga-mcp:latest
+
+# View logs
+docker logs -f maiga-mcp
+
+# Stop container
+docker stop maiga-mcp
+
+# Remove container
+docker rm maiga-mcp
+
+# Remove image
+docker rmi maiga-mcp:latest
+```
+
+#### Docker Compose Commands Reference
+
+```bash
+# Start services in background
+docker-compose up -d
+
+# Start services with build
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+
+# Restart services
+docker-compose restart
+```
+
+#### Production Deployment Tips
+
+1. **Use a reverse proxy** (nginx, Traefik) for SSL/TLS termination
+2. **Set resource limits** in docker-compose.yml:
+   ```yaml
+   deploy:
+     resources:
+       limits:
+         cpus: '1'
+         memory: 512M
+   ```
+3. **Enable restart policy** (already configured in docker-compose.yml)
+4. **Monitor logs** with a logging driver (e.g., Loki, ELK stack)
+5. **Use Docker secrets** for sensitive environment variables in production
+
+#### Docker Troubleshooting
+
+**Issue: Build fails with "smithery: not found"**
+- **Solution**: The Dockerfile has been updated to use `npx smithery build` which ensures the command is found correctly.
+
+**Issue: Build fails with "libsecret-1.so.0: cannot open shared object file"**
+- **Cause**: The `@smithery/cli` package depends on `keytar`, which requires the `libsecret-1` system library.
+- **Solution**: The Dockerfile installs `libsecret-1-dev` during the build stage. This should be handled automatically.
+
+**Issue: Build fails with "unsupported relocation type 7" on Alpine**
+- **Cause**: Native modules like `keytar` have compatibility issues with Alpine Linux's musl libc.
+- **Solution**: We use `node:20-slim` (Debian-based) instead of `node:20-alpine`. The current Dockerfile already uses the correct base image.
+
+**Issue: Container runs but can't connect**
+- **Check**: Ensure port 8081 is not already in use: `lsof -i :8081` or `netstat -an | grep 8081`
+- **Check**: View container logs: `docker logs maiga-mcp-server`
+- **Check**: Verify container is running: `docker ps | grep maiga-mcp`
 
 ## Contributing
 

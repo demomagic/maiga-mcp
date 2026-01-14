@@ -1,68 +1,75 @@
 # Multi-stage build for Maiga MCP Server
-FROM node:20-slim AS base
+# Using Debian-based image for better compatibility with native modules (keytar/libsecret)
+FROM node:20-slim AS builder
 
-# Install system dependencies required for native modules
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Set working directory
+WORKDIR /app
+
+# Install build dependencies required by @smithery/cli (keytar needs libsecret)
+RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
     libsecret-1-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (including devDependencies for build)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build the MCP server
+RUN npx smithery build
+
+# Production stage
+FROM node:20-slim
+
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
-
-# Install dependencies
-FROM base AS deps
-RUN npm ci --only=production && npm cache clean --force
-
-# Build stage
-FROM base AS builder
-COPY package.json package-lock.json* ./
-
-# Install ALL dependencies including devDependencies (needed for build)
-RUN npm ci
-
-# Copy source code and config
-COPY . .
-
-# Build the application using npx to ensure CLI is found
-RUN npx @smithery/cli build
-
-# Production stage
-FROM node:20-slim AS runner
-
-# Install runtime system dependencies (including libsecret for keytar if needed)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsecret-1-0 \
+# Install dumb-init for proper signal handling
+RUN apt-get update && apt-get install -y \
+    dumb-init \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Create non-root user for security
+RUN groupadd -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs nodejs
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 mcpuser
+# Copy package files
+COPY package*.json ./
 
-# Copy built application from builder
-COPY --from=builder --chown=mcpuser:nodejs /app/.smithery ./.smithery
-COPY --from=deps --chown=mcpuser:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=mcpuser:nodejs /app/package.json ./
-COPY --from=builder --chown=mcpuser:nodejs /app/smithery.yaml ./
+# Install production dependencies only
+RUN npm ci --omit=dev && \
+    npm cache clean --force
+
+# Copy built files from builder stage
+COPY --from=builder /app/.smithery ./.smithery
+COPY --from=builder /app/src ./src
+
+# Change ownership to non-root user
+RUN chown -R nodejs:nodejs /app
 
 # Switch to non-root user
-USER mcpuser
+USER nodejs
 
-# Expose default port (adjust if needed)
+# Expose port (Smithery default is 8081)
 EXPOSE 8081
 
-# Set environment variables
+# Environment variables (can be overridden at runtime)
 ENV NODE_ENV=production
 ENV PORT=8081
 
-# Default command (adjust based on how Smithery servers run)
-# Note: Smithery servers typically run via their platform,
-# but this Dockerfile can be used for local/alternative deployments
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:8081/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the MCP server
 CMD ["node", ".smithery/index.cjs"]
