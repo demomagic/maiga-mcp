@@ -27,8 +27,13 @@ RUN npm ci && \
 # Copy source code
 COPY . .
 
-# Make start script executable
-RUN chmod +x start.sh
+# Build the MCP server during Docker build (avoids runtime interaction)
+# Set environment variables for non-interactive build
+ENV SMITHERY_API_KEY=b0fa02fa-c699-4394-86ea-bc020cea3072
+ENV CI=true
+
+# Run smithery build to create .smithery/index.cjs
+RUN npx smithery build
 
 # Change ownership to non-root user
 RUN chown -R nodejs:nodejs /app
@@ -50,6 +55,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the MCP server using the start script
-# This will build and then run the server
-CMD ["./start.sh"]
+# Start the MCP server directly (already built during Docker build)
+CMD ["node", ".smithery/index.cjs"]
