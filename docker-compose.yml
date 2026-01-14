@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  maiga-mcp:
+    build: .
+    container_name: maiga-mcp-server
+    ports:
+      - "3000:3000"
+    environment:
+      - SMITHERY_API_KEY=${SMITHERY_API_KEY}
+    restart: unless-stopped
+    networks:
+      - maiga-network
+
+networks:
+  maiga-network:
+    driver: bridge
