@@ -1,48 +1,34 @@
-# Multi-stage build for Maiga MCP Server
-# Using Debian-based image for better compatibility with native modules (keytar/libsecret)
-FROM node:20-slim AS builder
-
-# Set working directory
-WORKDIR /app
-
-# Install build dependencies required by @smithery/cli (keytar needs libsecret)
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    libsecret-1-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies (including devDependencies for build)
-RUN npm ci
-
-# Copy source code
-COPY . .
-
-# Build the MCP server - creates a self-contained .smithery/index.cjs bundle
-RUN npx smithery build
-
-# Production stage - minimal runtime image
+# Simplified Dockerfile for Maiga MCP Server
+# Using npm run dev for simpler deployment
 FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
+# Install runtime dependencies
+# - dumb-init: for proper signal handling
+# - libsecret-1-0: required by smithery dev (keytar dependency)
 RUN apt-get update && apt-get install -y \
     dumb-init \
+    libsecret-1-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
 RUN groupadd -g 1001 nodejs && \
     useradd -r -u 1001 -g nodejs nodejs
 
-# Copy only the built bundle from builder stage
-# The .smithery/index.cjs is self-contained and includes all dependencies
-COPY --from=builder /app/.smithery ./.smithery
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including devDependencies for smithery dev)
+RUN npm ci && \
+    npm cache clean --force
+
+# Copy source code
+COPY . .
+
+# Make start script executable
+RUN chmod +x start.sh
 
 # Change ownership to non-root user
 RUN chown -R nodejs:nodejs /app
@@ -64,5 +50,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the MCP server with the bundled file
-CMD ["node", ".smithery/index.cjs"]
+# Start the MCP server using the start script
+# This will build and then run the server
+CMD ["./start.sh"]

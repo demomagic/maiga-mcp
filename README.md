@@ -303,17 +303,23 @@ docker-compose down
 #### Docker Configuration
 
 The Dockerfile includes:
-- ✅ **Multi-stage build** for optimized image size (~225MB)
-- ✅ **Self-contained bundle** - production image only includes the bundled `.smithery/index.cjs` file
+- ✅ **Simple single-stage build** for ease of use (~429MB)
+- ✅ **Runtime build** - builds MCP server on container start for flexibility
 - ✅ **Non-root user** for enhanced security
 - ✅ **Health checks** for container monitoring
 - ✅ **dumb-init** for proper signal handling
 - ✅ **Production-ready** Node.js Debian-based image (node:20-slim)
 
 **Build Process:**
-1. **Builder stage**: Installs all dependencies and runs `smithery build` to create a self-contained bundle
-2. **Production stage**: Only copies the `.smithery/index.cjs` bundle (no node_modules needed)
-3. **Runtime**: Directly runs `node .smithery/index.cjs` without smithery CLI
+1. **Docker build**: Installs all dependencies (including devDependencies)
+2. **Container start**: Runs `start.sh` which:
+   - Executes `smithery build` to create `.smithery/index.cjs` bundle
+   - Starts the server with `node .smithery/index.cjs`
+
+**Why this approach?**
+- ✅ Flexible: Source code changes are reflected on container restart
+- ✅ Simple: No multi-stage complexity
+- ✅ Reliable: Uses stable `node .smithery/index.cjs` for runtime
 
 **Note:** We use `node:20-slim` (Debian-based) instead of Alpine because `@smithery/cli` depends on `keytar`, a native module that requires `libsecret-1`, which has better compatibility with Debian/glibc than Alpine/musl
 

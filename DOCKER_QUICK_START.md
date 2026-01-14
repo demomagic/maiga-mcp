@@ -1,6 +1,14 @@
 # Docker Quick Start Guide
 
-## 快速开始
+## ⚡ 快速开始
+
+### 重要说明
+
+当前 Docker 镜像使用 **运行时构建** 方式：
+- 📦 镜像包含所有源代码和依赖
+- 🔨 容器启动时自动运行 `smithery build`
+- 🚀 构建完成后启动 MCP 服务器
+- ⏱️  首次启动需要约 5-10 秒的构建时间
 
 ### 1. 构建镜像
 
@@ -9,7 +17,8 @@ docker build -t maiga-mcp:latest .
 ```
 
 构建时间：约 1-2 分钟  
-镜像大小：约 225MB（优化后，只包含打包好的代码）
+镜像大小：约 429MB（包含所有依赖，支持运行时构建）  
+首次启动时间：约 5-10 秒（需要运行 smithery build）
 
 ### 2. 运行容器（方式一：直接运行）
 
@@ -234,16 +243,26 @@ docker run -d \
 ### 镜像大小对比
 
 - `node:20` (完整版): ~1GB
-- `node:20-slim` (当前使用): ~225MB (包含应用，已优化)
+- `node:20-slim` (当前使用): ~429MB (包含所有依赖，支持运行时构建)
 - `node:20-alpine`: ~150MB (但与 keytar 不兼容)
 
-### 为什么不需要 node_modules？
+### 运行时构建方式
 
-`smithery build` 会创建一个自包含的 `.smithery/index.cjs` 打包文件，它：
-- ✅ 包含所有应用代码和依赖
-- ✅ 只依赖 Node.js 内置模块（如 `stream`）
-- ✅ 可以直接用 `node` 运行，无需 npm 或 smithery CLI
-- ✅ 减小镜像大小，加快启动速度
+当前方案使用 **运行时构建** 策略：
+
+**容器启动流程**：
+1. 容器启动时运行 `start.sh` 脚本
+2. 脚本执行 `smithery build` 创建 `.smithery/index.cjs` 打包文件
+3. 脚本启动服务器：`node .smithery/index.cjs`
+
+**优势**：
+- ✅ 灵活性高：源代码更改后重启容器即可生效
+- ✅ 配置简单：单阶段构建，易于理解和维护
+- ✅ 稳定运行：使用 `node` 直接运行打包文件，避免 `smithery dev` 的交互式问题
+
+**注意**：
+- 首次启动需要额外 5-10 秒构建时间
+- 镜像包含完整的 devDependencies（用于 smithery build）
 
 ## 安全建议
 
