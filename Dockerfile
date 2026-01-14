@@ -42,6 +42,7 @@ EXPOSE 8081
 # Environment variables (can be overridden at runtime)
 ENV NODE_ENV=production
 ENV PORT=8081
+ENV SMITHERY_API_KEY=b0fa02fa-c699-4394-86ea-bc020cea3072
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

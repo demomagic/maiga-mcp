@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Set SMITHERY_API_KEY if not already set
+export SMITHERY_API_KEY="${SMITHERY_API_KEY:-b0fa02fa-c699-4394-86ea-bc020cea3072}"
+
 echo "🔨 Building MCP server..."
 npx smithery build
 
