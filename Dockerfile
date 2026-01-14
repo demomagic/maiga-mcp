@@ -32,4 +32,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Run the Smithery playground
-CMD ["npx", "@smithery/cli@latest", "playground", "--port", "3000", "--key", "${SMITHERY_API_KEY}"]
+CMD ["npx", "@smithery/cli@latest", "playground", "--port", "3000", "--key", "$SMITHERY_API_KEY"]
