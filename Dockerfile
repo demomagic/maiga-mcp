@@ -22,12 +22,15 @@ RUN npm ci --only=production && npm cache clean --force
 # Build stage
 FROM base AS builder
 COPY package.json package-lock.json* ./
+
+# Install ALL dependencies including devDependencies (needed for build)
 RUN npm ci
 
+# Copy source code and config
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application using npx to ensure CLI is found
+RUN npx @smithery/cli build
 
 # Production stage
 FROM node:20-slim AS runner
