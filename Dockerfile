@@ -46,12 +46,5 @@ ENV HOST=0.0.0.0
 ENV PORT=8081
 ENV NODE_ENV=production
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:8081/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-
 # Start the MCP server directly (already built during Docker build)
 CMD ["node", ".smithery/index.cjs"]
