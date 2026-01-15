@@ -18,7 +18,7 @@ RUN npm ci --only=production && \
     npm cache clean --force
 
 # Install Smithery CLI
-RUN npm install -g @smithery/cli@latest
+RUN npm install -g @smithery/cli@3.1.6
 
 # Copy project files
 COPY . .
@@ -28,6 +28,7 @@ RUN npm run build
 
 # Expose the port
 EXPOSE 3000
+EXPOSE 8081
 
 ARG SMITHERY_API_KEY
 
