@@ -39,6 +39,13 @@ USER nodejs
 # Expose port (Smithery default is 8081)
 EXPOSE 8081
 
+# Environment variables
+# HOST=0.0.0.0 is CRITICAL for Docker - allows external connections
+# Without this, the server only listens on 127.0.0.1 (localhost) and cannot be accessed from outside the container
+ENV HOST=0.0.0.0
+ENV PORT=8081
+ENV NODE_ENV=production
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:8081/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
