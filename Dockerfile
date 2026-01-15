@@ -1,36 +1,50 @@
-# Use official Node.js LTS version with Debian slim
+# Simplified Dockerfile for Maiga MCP Server
+# Using npm run dev for simpler deployment
 FROM node:20-slim
-
-# Install system dependencies including libsecret
-RUN apt-get update && apt-get install -y \
-    libsecret-1-0 \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
 
+# Install runtime dependencies
+# - dumb-init: for proper signal handling
+# - libsecret-1-0: required by smithery dev (keytar dependency)
+RUN apt-get update && apt-get install -y \
+    dumb-init \
+    libsecret-1-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN groupadd -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs nodejs
+
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && \
+# Install all dependencies (including devDependencies for smithery dev)
+RUN npm ci && \
     npm cache clean --force
 
-# Install Smithery CLI
-RUN npm install -g @smithery/cli@3.1.6
-
-# Copy project files
+# Copy source code
 COPY . .
 
-# Build the project
-RUN npm run build
+# Run smithery build to create .smithery/index.cjs
+RUN npx smithery build
 
-# Expose the port
-EXPOSE 3000
+# Change ownership to non-root user
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port (Smithery default is 8081)
 EXPOSE 8081
 
-ARG SMITHERY_API_KEY
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:8081/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Run the Smithery playground
-CMD ["/bin/sh", "-c", "npx @smithery/cli@latest playground --port 3000 --key $SMITHERY_API_KEY"]
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the MCP server directly (already built during Docker build)
+CMD ["node", ".smithery/index.cjs"]
